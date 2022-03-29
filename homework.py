@@ -7,7 +7,9 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import *
+from exceptions import EnvVariableError, ResponseStatusCodeError
+from exceptions import HomeworkStatusError
+
 
 load_dotenv()
 
@@ -41,7 +43,6 @@ HOMEWORK_STATUSES = {
 
 def send_message(bot, message):
     """Отправляем сообщение в чат."""
-
     message_sent = bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     logger.info(bool(message_sent))
 
@@ -55,7 +56,6 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Получаем ответ от API."""
-
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
@@ -72,7 +72,6 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ от API."""
-
     if type(response) is not dict:
         logger.error('Ответ API не является словарем')
         raise TypeError('Ответ API не является словарем')
@@ -87,7 +86,6 @@ def check_response(response):
 
 def parse_status(homework):
     """Получаем данные о домашней работе."""
-
     if homework.get('homework_name') is None:
         logger.error('В ответе API отсутствет ключ homework_name')
     homework_name = homework.get('homework_name')
@@ -107,12 +105,11 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверяем переменные окружения."""
-
     check_result = None
 
-    if (not PRACTICUM_TOKEN or
-            not TELEGRAM_TOKEN or
-            not TELEGRAM_CHAT_ID):
+    if (not PRACTICUM_TOKEN
+            or not TELEGRAM_TOKEN
+            or not TELEGRAM_CHAT_ID):
         check_result = False
         logger.critical('Отсутствет переменная окружения!')
     elif (PRACTICUM_TOKEN is not None
@@ -125,7 +122,6 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     status_message = ''
