@@ -1,3 +1,4 @@
+import http
 import logging
 import os
 import sys
@@ -6,6 +7,7 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
+from telegram import TelegramError
 
 from exceptions import EnvVariableError, ResponseStatusCodeError
 from exceptions import HomeworkStatusError
@@ -43,13 +45,15 @@ HOMEWORK_STATUSES = {
 
 def send_message(bot, message):
     """Отправляем сообщение в чат."""
-    message_sent = bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
-    logger.info(bool(message_sent))
-
-    if bool(message_sent):
+    try:
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+        message_sent = True
         logger.info('Сообщение отправлено в Телеграм')
-    else:
-        logger.error('Сообщение не было отправлено в Телеграм')
+    except telegram.error.TelegramError as error:
+        logger.error(f'Ошибка отправки сообщения в телеграм: {error}')
+        raise TelegramError(f'Ошибка отправки сообщения в телеграм: {error}')
+    except Exception as error:
+        raise Exception(f'Непредвиденная ошибка: {error}')
 
     return message_sent
 
@@ -60,7 +64,7 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     response = requests.get(ENDPOINT, headers=HEADERS, params=params)
 
-    if response.status_code != 200:
+    if response.status_code != http.HTTPStatus.OK:
         logger.error('API не отвечает на запрос')
         raise ResponseStatusCodeError
 
@@ -72,10 +76,10 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяем ответ от API."""
-    if type(response) is not dict:
+    if not isinstance(response, dict):
         logger.error('Ответ API не является словарем')
         raise TypeError('Ответ API не является словарем')
-    elif type(response.get('homeworks')) is not list:
+    elif not isinstance(response.get('homeworks'), list):
         logger.error('Список домашних работ не является списком')
         raise TypeError('Список домашних работ не является списком')
     else:
@@ -105,19 +109,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверяем переменные окружения."""
-    check_result = None
-
-    if (not PRACTICUM_TOKEN
-            or not TELEGRAM_TOKEN
-            or not TELEGRAM_CHAT_ID):
-        check_result = False
-        logger.critical('Отсутствет переменная окружения!')
-    elif (PRACTICUM_TOKEN is not None
-          and TELEGRAM_TOKEN is not None
-          and TELEGRAM_CHAT_ID is not None):
-        check_result = True
-
-    return check_result
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def main():
@@ -148,7 +140,6 @@ def main():
                     logger.debug('Статус проверки работы не изменился')
 
             current_timestamp = current_timestamp
-            time.sleep(RETRY_TIME)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
@@ -156,9 +147,8 @@ def main():
                 error_message = message
                 send_message(bot, message)
                 logger.info('Сообщение об ошибке отправлено в Телеграм')
+        finally:
             time.sleep(RETRY_TIME)
-        else:
-            pass
 
 
 if __name__ == '__main__':
