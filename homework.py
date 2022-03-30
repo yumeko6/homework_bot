@@ -7,10 +7,10 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
+from requests import HTTPError
 from telegram import TelegramError
 
-from exceptions import EnvVariableError, ResponseStatusCodeError
-from exceptions import HomeworkStatusError
+from exceptions import EnvVariableError, HomeworkStatusError
 
 
 load_dotenv()
@@ -66,7 +66,7 @@ def get_api_answer(current_timestamp):
 
     if response.status_code != http.HTTPStatus.OK:
         logger.error('API не отвечает на запрос')
-        raise ResponseStatusCodeError
+        raise HTTPError('API не отвечает на запрос')
 
     logger.info('Отправлен API запрос')
     response = response.json()
