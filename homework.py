@@ -62,14 +62,18 @@ def get_api_answer(current_timestamp):
     """Получаем ответ от API."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    response = requests.get(ENDPOINT, headers=HEADERS, params=params)
 
-    if response.status_code != http.HTTPStatus.OK:
-        logger.error('API не отвечает на запрос')
-        raise HTTPError('API не отвечает на запрос')
-
-    logger.info('Отправлен API запрос')
-    response = response.json()
+    try:
+        response = requests.get(ENDPOINT, headers=HEADERS, params=params)
+    except Exception as error:
+        logger.error(f'Ошибка доступа к сайту: {error}')
+        raise ConnectionError('API не отвечает на запрос') from error
+    else:
+        if response.status_code == http.HTTPStatus.OK:
+            logger.info('Отправлен API запрос')
+            response = response.json()
+        else:
+            logger.error('API не отвечает на запрос')
 
     return response
 
@@ -96,7 +100,7 @@ def parse_status(homework):
 
     if homework.get('status') is None:
         logger.error('В ответе API отсутствует ключ status')
-        raise HomeworkStatusError
+        raise HomeworkStatusError('В ответе API отсутствует ключ status')
     homework_status = homework.get('status')
 
     if homework.get('status') not in HOMEWORK_STATUSES:
@@ -123,7 +127,8 @@ def main():
         try:
             is_tokens = check_tokens()
             if not is_tokens:
-                raise EnvVariableError
+                logger.critical('Отсутствует переменная окружения!')
+                raise EnvVariableError('Отсутствует переменная окружения!')
 
             response = get_api_answer(current_timestamp)
             homework = check_response(response)
