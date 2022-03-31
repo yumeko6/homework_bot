@@ -73,6 +73,7 @@ def get_api_answer(current_timestamp):
             response = response.json()
         else:
             logger.error('API не отвечает на запрос')
+            raise ConnectionError('API не отвечает на запрос')
 
     return response
 
