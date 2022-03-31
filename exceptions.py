@@ -1,6 +1,10 @@
 class EnvVariableError(Exception):
-    pass
+    """
+    Выбрасывает исключение, если отсутствует хотя бы одна переменная окружения.
+    """
 
 
 class HomeworkStatusError(Exception):
-    pass
+    """
+    Выбрасывает исключение, если в ответе API отсутствует ключ status.
+    """

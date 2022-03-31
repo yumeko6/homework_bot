@@ -7,7 +7,6 @@ import time
 import requests
 import telegram
 from dotenv import load_dotenv
-from requests import HTTPError
 from telegram import TelegramError
 
 from exceptions import EnvVariableError, HomeworkStatusError
@@ -67,7 +66,7 @@ def get_api_answer(current_timestamp):
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except Exception as error:
         logger.error(f'Ошибка доступа к сайту: {error}')
-        raise ConnectionError('API не отвечает на запрос') from error
+        raise ConnectionError('Ошибка доступа к сайту') from error
     else:
         if response.status_code == http.HTTPStatus.OK:
             logger.info('Отправлен API запрос')
